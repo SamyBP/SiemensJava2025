@@ -1,7 +1,8 @@
-package com.siemens.internship;
+package com.siemens.internship.controller;
 
+import com.siemens.internship.service.ItemService;
+import com.siemens.internship.model.Item;
 import jakarta.validation.Valid;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.validation.BindingResult;
@@ -13,9 +14,11 @@ import java.util.Optional;
 @RestController
 @RequestMapping("/api/items")
 public class ItemController {
+    private final ItemService itemService;
 
-    @Autowired
-    private ItemService itemService;
+    public ItemController(ItemService itemService) {
+        this.itemService = itemService;
+    }
 
     @GetMapping
     public ResponseEntity<List<Item>> getAllItems() {
