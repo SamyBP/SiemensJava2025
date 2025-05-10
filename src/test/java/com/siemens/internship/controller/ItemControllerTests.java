@@ -13,7 +13,6 @@ import org.springframework.http.MediaType;
 import org.springframework.test.web.servlet.MockMvc;
 
 import static org.hamcrest.Matchers.containsInAnyOrder;
-import static org.hamcrest.Matchers.containsString;
 import static org.mockito.Mockito.doNothing;
 import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
@@ -45,7 +44,7 @@ public class ItemControllerTests {
     void test_whenCreateItem_invalidEmail_returnsErrorMessageAnd400() throws Exception {
         var givenItem = new Item("test", "test", "invalid-email");
 
-        var expectedErrorDetails = new String[]{"Invalid email format"};
+        var expectedErrorDetails = new String[]{"invalid email format"};
         performInvalidCreateRequest(givenItem, expectedErrorDetails);
     }
 
@@ -65,6 +64,18 @@ public class ItemControllerTests {
         performInvalidCreateRequest(givenItem, expectedErrorDetails);
     }
 
+    private void performInvalidCreateRequest(Item item, String... expectedErrors) throws Exception {
+        var request = post("/api/items")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(objectMapper.writeValueAsString(item));
+
+        mvc.perform(request)
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.detail").isArray())
+                .andExpect(jsonPath("$.detail.length()").value(expectedErrors.length))
+                .andExpect(jsonPath("$.detail").value(containsInAnyOrder(expectedErrors)));
+    }
+
     @Test
     void test_whenGetItemById_itemDoesNotExist_returns404() throws Exception {
         var givenId = 1L;
@@ -75,18 +86,6 @@ public class ItemControllerTests {
 
         mvc.perform(get("/api/items/{id}", givenId))
                 .andExpect(status().isNotFound())
-                .andExpect(jsonPath("$.detail").value(containsString("Item with id: 1 not found")));
-    }
-
-    private void performInvalidCreateRequest(Item item, String... expectedErrors) throws Exception {
-        var request = post("/api/items")
-                .contentType(MediaType.APPLICATION_JSON)
-                .content(objectMapper.writeValueAsBytes(item));
-
-        mvc.perform(request)
-                .andExpect(status().isBadRequest())
-                .andExpect(jsonPath("$.detail").isArray())
-                .andExpect(jsonPath("$.detail.length()").value(expectedErrors.length))
-                .andExpect(jsonPath("$.detail").value(containsInAnyOrder(expectedErrors)));
+                .andExpect(jsonPath("$.detail").value(containsInAnyOrder("Item with id: 1 not found")));
     }
 }

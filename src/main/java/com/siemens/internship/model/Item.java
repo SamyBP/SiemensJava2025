@@ -26,7 +26,7 @@ public class Item {
     @Enumerated(EnumType.STRING)
     private ItemStatus status;
 
-    @Email(regexp = "^(.+)@(.+)$", message = "Invalid email format")
+    @Email(regexp = "^(.+)@(.+)$", message = "invalid email format")
     private String email;
 
     public Item(String name, String description, String email) {

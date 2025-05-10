@@ -3,6 +3,7 @@ package com.siemens.internship.service;
 import com.siemens.internship.model.Item;
 import com.siemens.internship.model.ItemStatus;
 import com.siemens.internship.repository.ItemRepository;
+import jakarta.persistence.EntityNotFoundException;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
 
@@ -28,8 +29,9 @@ public class ItemService {
         return itemRepository.findAll();
     }
 
-    public Optional<Item> findById(Long id) {
-        return itemRepository.findById(id);
+    public Item findById(Long id) {
+        return itemRepository.findById(id)
+                .orElseThrow(() -> new EntityNotFoundException(String.format("Item with id: %d not found", id)));
     }
 
     public Item save(Item item) {
