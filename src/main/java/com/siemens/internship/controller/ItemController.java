@@ -35,10 +35,11 @@ public class ItemController {
     }
 
     @PutMapping("/{id}")
-    public ResponseEntity<Item> updateItem(@PathVariable Long id, @RequestBody Item item) {
+    public ResponseEntity<Item> updateItem(@PathVariable Long id, @RequestBody @Valid Item item) {
         var existingItem = itemService.findById(id);
         item.setId(existingItem.getId());
-        return new ResponseEntity<>(itemService.save(item), HttpStatus.OK);
+        var updatedItem = itemService.save(item);
+        return new ResponseEntity<>(updatedItem, HttpStatus.OK);
     }
 
     @DeleteMapping("/{id}")

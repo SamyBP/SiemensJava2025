@@ -7,11 +7,9 @@ import jakarta.validation.constraints.NotEmpty;
 import lombok.*;
 
 @Entity
-@Getter
-@Setter
 @AllArgsConstructor
 @NoArgsConstructor
-@Builder
+@Data
 public class Item {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -28,6 +26,10 @@ public class Item {
 
     @Email(regexp = "^(.+)@(.+)$", message = "invalid email format")
     private String email;
+
+    public Item(Long id) {
+        this.id = id;
+    }
 
     public Item(String name, String description, String email) {
         this.name = name;

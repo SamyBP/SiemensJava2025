@@ -8,7 +8,10 @@ import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ControllerAdvice;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
+import java.util.stream.Collectors;
 
 @ControllerAdvice
 public class DefaultExceptionHandler {
@@ -17,14 +20,14 @@ public class DefaultExceptionHandler {
     public ResponseEntity<ErrorResponse> handle(MethodArgumentNotValidException e) {
         var fieldErrors = e.getBindingResult().getFieldErrors().stream()
                 .map(DefaultMessageSourceResolvable::getDefaultMessage)
-                .toList();
+                .collect(Collectors.toSet());
 
         return new ResponseEntity<>(new ErrorResponse(fieldErrors), HttpStatus.BAD_REQUEST);
     }
 
     @ExceptionHandler(EntityNotFoundException.class)
     public ResponseEntity<ErrorResponse> handle(EntityNotFoundException e) {
-        var errorDetails = List.of(e.getMessage());
+        var errorDetails = Set.of(e.getMessage());
         return new ResponseEntity<>(new ErrorResponse(errorDetails), HttpStatus.NOT_FOUND);
     }
 }

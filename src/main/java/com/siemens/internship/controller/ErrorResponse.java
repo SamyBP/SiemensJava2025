@@ -1,6 +1,6 @@
 package com.siemens.internship.controller;
 
-import java.util.List;
+import java.util.Set;
 
-public record ErrorResponse(List<String> detail) {
+public record ErrorResponse(Set<String> detail) {
 }
