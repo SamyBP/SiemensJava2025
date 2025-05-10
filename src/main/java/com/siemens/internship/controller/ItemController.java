@@ -49,6 +49,7 @@ public class ItemController {
 
     @GetMapping("/process")
     public ResponseEntity<List<Item>> processItems() {
-        return new ResponseEntity<>(itemService.processItemsAsync(), HttpStatus.OK);
+        var itemIds = itemService.findAllIds();
+        return new ResponseEntity<>(itemService.processItemsAsync(itemIds), HttpStatus.OK);
     }
 }

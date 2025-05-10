@@ -1,27 +1,27 @@
 package com.siemens.internship.service;
 
 import com.siemens.internship.model.Item;
-import com.siemens.internship.model.ItemStatus;
 import com.siemens.internship.repository.ItemRepository;
 import jakarta.persistence.EntityNotFoundException;
-import org.springframework.scheduling.annotation.Async;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Optional;
-import java.util.concurrent.*;
+import java.util.Objects;
+import java.util.concurrent.CompletableFuture;
+import java.util.function.Function;
 
 @Service
 public class ItemService {
-
+    private static final Logger logger = LoggerFactory.getLogger(ItemService.class);
     private final ItemRepository itemRepository;
-    private static ExecutorService executor = Executors.newFixedThreadPool(10);
-    private List<Item> processedItems = new ArrayList<>();
-    private int processedCount = 0;
+    private final AsyncItemProcessor itemProcessor;
 
-    public ItemService(ItemRepository itemRepository) {
+    public ItemService(ItemRepository itemRepository, AsyncItemProcessor itemProcessor) {
         this.itemRepository = itemRepository;
+        this.itemProcessor = itemProcessor;
     }
 
 
@@ -42,6 +42,9 @@ public class ItemService {
         itemRepository.deleteById(id);
     }
 
+    public List<Long> findAllIds() {
+        return itemRepository.findAllIds();
+    }
 
     /**
      * Your Tasks
@@ -54,42 +57,35 @@ public class ItemService {
      * Correct use of Spring's @Async annotation
      * Add appropriate comments explaining your changes and why they fix the issues
      * Write a brief explanation of what was wrong with the original implementation
-     *
+     * <p>
      * Hints
      * Consider how CompletableFuture composition can help coordinate multiple async operations
      * Think about appropriate thread-safe collections
      * Examine how errors are handled and propagated
      * Consider the interaction between Spring's @Async and CompletableFuture
      */
-    @Async
-    public List<Item> processItemsAsync() {
+    public List<Item> processItemsAsync(List<Long> itemIds) {
+        List<CompletableFuture<Item>> futures = new ArrayList<>();
 
-        List<Long> itemIds = itemRepository.findAllIds();
+        itemIds.forEach(id -> futures.add(submitTask(id)));
 
-        for (Long id : itemIds) {
-            CompletableFuture.runAsync(() -> {
-                try {
-                    Thread.sleep(100);
+        CompletableFuture<Void> allFutures = CompletableFuture.allOf(
+                futures.toArray(new CompletableFuture[0]));
 
-                    Item item = itemRepository.findById(id).orElse(null);
-                    if (item == null) {
-                        return;
-                    }
+        Function<Void, List<Item>> await = v -> futures.stream()
+                .map(CompletableFuture::join)
+                .filter(Objects::nonNull)
+                .toList();
 
-                    processedCount++;
-
-                    item.setStatus(ItemStatus.PROCESSED);
-                    itemRepository.save(item);
-                    processedItems.add(item);
-
-                } catch (InterruptedException e) {
-                    System.out.println("Error: " + e.getMessage());
-                }
-            }, executor);
-        }
-
-        return processedItems;
+        return allFutures.thenApply(await).join();
     }
 
+    private CompletableFuture<Item> submitTask(long id) {
+        logger.debug("Submitting item with id: %d for process".formatted(id));
+        return this.itemProcessor.process(id)
+                .exceptionally(e -> {
+                    logger.warn(e.getMessage());
+                    return null;
+                });
+    }
 }
-
