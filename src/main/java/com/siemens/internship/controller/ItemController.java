@@ -1,6 +1,7 @@
 package com.siemens.internship.controller;
 
 import com.siemens.internship.model.Item;
+import com.siemens.internship.model.ItemStatus;
 import com.siemens.internship.service.ItemService;
 import jakarta.validation.Valid;
 import org.springframework.http.HttpStatus;
@@ -25,6 +26,8 @@ public class ItemController {
 
     @PostMapping
     public ResponseEntity<Item> createItem(@RequestBody @Valid Item item) {
+        item.setId(null);
+        item.setStatus(ItemStatus.UNPROCESSED);
         return new ResponseEntity<>(itemService.save(item), HttpStatus.CREATED);
     }
 
@@ -37,7 +40,11 @@ public class ItemController {
     @PutMapping("/{id}")
     public ResponseEntity<Item> updateItem(@PathVariable Long id, @RequestBody @Valid Item item) {
         var existingItem = itemService.findById(id);
+        var status = item.getStatus() != null ? item.getStatus() : existingItem.getStatus();
+
         item.setId(existingItem.getId());
+        item.setStatus(status);
+
         var updatedItem = itemService.save(item);
         return new ResponseEntity<>(updatedItem, HttpStatus.OK);
     }

@@ -6,6 +6,7 @@ import jakarta.persistence.EntityNotFoundException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -38,8 +39,13 @@ public class ItemService {
         return itemRepository.save(item);
     }
 
+    @Transactional(rollbackFor = EntityNotFoundException.class)
     public void deleteById(Long id) {
-        itemRepository.deleteById(id);
+        int affectedRows =  itemRepository.deleteItemById(id);
+
+        if (affectedRows == 0) {
+            throw new EntityNotFoundException("Item with id: %d not found".formatted(id));
+        }
     }
 
     public List<Long> findAllIds() {
@@ -49,7 +55,10 @@ public class ItemService {
     public List<Item> processItemsAsync(List<Long> itemIds) {
         List<CompletableFuture<Item>> processingFutures = new ArrayList<>();
 
-        itemIds.forEach(id -> processingFutures.add(submitTask(id)));
+        itemIds.forEach(id -> {
+            var task = submitTask(id);
+            processingFutures.add(task);
+        });
 
         CompletableFuture<Void> allFuturesDone = CompletableFuture.allOf(processingFutures.toArray(new CompletableFuture[0]));
 

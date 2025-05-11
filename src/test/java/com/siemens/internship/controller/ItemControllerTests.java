@@ -1,20 +1,19 @@
 package com.siemens.internship.controller;
 
 
-import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.siemens.internship.model.Item;
 import com.siemens.internship.model.ItemStatus;
 import com.siemens.internship.service.ItemService;
+import com.siemens.internship.utils.RequestFactory;
+import com.siemens.internship.utils.ResponseFactory;
 import jakarta.persistence.EntityNotFoundException;
+import lombok.SneakyThrows;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
 import org.springframework.boot.test.mock.mockito.MockBean;
-import org.springframework.http.MediaType;
 import org.springframework.test.web.servlet.MockMvc;
-import org.springframework.test.web.servlet.MvcResult;
-import org.springframework.test.web.servlet.request.MockHttpServletRequestBuilder;
 
 import java.util.List;
 import java.util.Set;
@@ -76,23 +75,26 @@ public class ItemControllerTests {
         var givenItem = new Item("test", "test", "test@test.com");
         when(itemService.save(givenItem)).thenReturn(givenItem);
 
-        var request = prepareRequestWithPayload(givenItem);
+        var request = RequestFactory.create(post("/api/items"), prepareRequestPayload(givenItem));
+
         var result = mvc.perform(request)
                 .andExpect(status().isCreated())
                 .andReturn();
 
-        var response = createItemFromRequestResult(result);
+//        var response = createItemFromRequestResult(result);
+        var response = ResponseFactory.create(result, Item.class, objectMapper);
         assertEquals(response, givenItem);
     }
 
     private void performInvalidCreateRequest(Item item, ErrorResponse expectedErrorResponse) throws Exception {
-        var request = prepareRequestWithPayload(item);
+        var request = RequestFactory.create(post("/api/items"), prepareRequestPayload(item));
 
         var result =  mvc.perform(request)
                 .andExpect(status().isBadRequest())
                 .andReturn();
 
-        var response = createErrorResponseFromRequestResult(result);
+        var response = ResponseFactory.create(result, ErrorResponse.class, objectMapper);
+
         assertEquals(response, expectedErrorResponse);
     }
 
@@ -100,9 +102,7 @@ public class ItemControllerTests {
     void test_whenUpdateItem_invalidBody_returnsErrorResponseWith400() throws Exception {
         var givenId = 1L;
 
-        var request = put("/api/items/{id}", givenId)
-                .contentType(MediaType.APPLICATION_JSON)
-                .content(objectMapper.writeValueAsString(new Item()));
+        var request = RequestFactory.create(put("/api/items/{id}", givenId), prepareRequestPayload(new Item()));
 
         mvc.perform(request)
                 .andExpect(status().isBadRequest());
@@ -115,15 +115,13 @@ public class ItemControllerTests {
 
         when(itemService.findById(givenId)).thenThrow(new EntityNotFoundException("Item 1 not found"));
 
-        var request = put("/api/items/{id}", givenId)
-                .contentType(MediaType.APPLICATION_JSON)
-                .content(objectMapper.writeValueAsString(givenItem));
+        var request = RequestFactory.create(put("/api/items/{id}", givenId), prepareRequestPayload(givenItem));
 
         var result = mvc.perform(request)
                 .andExpect(status().isNotFound())
                 .andReturn();
 
-        var response = createErrorResponseFromRequestResult(result);
+        var response = ResponseFactory.create(result, ErrorResponse.class, objectMapper);
         assertEquals(response, new ErrorResponse(Set.of("Item 1 not found")));
     }
 
@@ -137,9 +135,7 @@ public class ItemControllerTests {
         when(itemService.findById(givenId)).thenReturn(existingItem);
         when(itemService.save(givenItem)).thenReturn(updatedItem);
 
-        var request = put("/api/items/{id}", givenId)
-                .contentType(MediaType.APPLICATION_JSON)
-                .content(objectMapper.writeValueAsString(givenItem));
+        var request = RequestFactory.create(put("/api/items/{id}", givenId), prepareRequestPayload(givenItem));
 
         mvc.perform(request)
                 .andExpect(status().isOk());
@@ -157,7 +153,7 @@ public class ItemControllerTests {
                 .andExpect(status().isNotFound())
                 .andReturn();
 
-        var response = createErrorResponseFromRequestResult(result);
+        var response = ResponseFactory.create(result, ErrorResponse.class, objectMapper);
         assertEquals(response, new ErrorResponse(Set.of(exceptionMessage)));
     }
 
@@ -172,7 +168,7 @@ public class ItemControllerTests {
                 .andExpect(status().isOk())
                 .andReturn();
 
-        var response = createItemFromRequestResult(result);
+        var response = ResponseFactory.create(result, Item.class, objectMapper);
         assertEquals(response, expectedItem);
     }
 
@@ -197,19 +193,8 @@ public class ItemControllerTests {
                 .andExpect(status().isOk());
     }
 
-    private ErrorResponse createErrorResponseFromRequestResult(MvcResult result) throws Exception {
-        var json = result.getResponse().getContentAsString();
-        return objectMapper.readValue(json, ErrorResponse.class);
-    }
-
-    private Item createItemFromRequestResult(MvcResult result) throws Exception {
-        var json = result.getResponse().getContentAsString();
-        return objectMapper.readValue(json, Item.class);
-    }
-
-    private MockHttpServletRequestBuilder prepareRequestWithPayload(Item payload) throws JsonProcessingException {
-        return post("/api/items")
-                .contentType(MediaType.APPLICATION_JSON)
-                .content(objectMapper.writeValueAsString(payload));
+    @SneakyThrows
+    private String prepareRequestPayload(Object payload) {
+        return objectMapper.writeValueAsString(payload);
     }
 }

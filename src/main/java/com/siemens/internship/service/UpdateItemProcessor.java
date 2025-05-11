@@ -30,7 +30,7 @@ public class UpdateItemProcessor implements AsyncItemProcessor {
     public CompletableFuture<Item> process(long itemId) {
         logger.debug("Processing item %d".formatted(itemId));
 
-        Thread.sleep(1000);
+        Thread.sleep(100);
 
         var itemToProcess = itemRepository.findById(itemId)
                 .orElseThrow(() -> new EntityNotFoundException("Item with id: %d not found".formatted(itemId)));
