@@ -27,7 +27,7 @@ This repository contains a Spring Boot application that implements a simple CRUD
   
     ```json
      {
-       "details": ["invalid email format", ...]       
+       "details": ["invalid email format", "name must not be empty"]       
      }
     ```
   * **EntityNotFoundException**. Returns 404 and a response body like this:
