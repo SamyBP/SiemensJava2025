@@ -86,3 +86,28 @@ that the user can verify, so a better validation "flow" would be to send a verif
   * the item does not exist => it will result in an insert with that id, this will have some conflicts with the id sequence in the database at some point
   * to solve this, currently i create a new Item object with status = ItemStatus.UNPROCESSED and id = null, but this can be modified using a dto. Did not make this modification because that would mean that any "existing" client will have to modify their request
 * i would put a partial index on item.status where status = 'UNPROCESSED' thus optimizing the performance of the query with a smaller index size
+* currently when an async task throws an exception i complete the task in null and not put the task result in the result list, but a better approach would be to put it into a list of it's own alongside the error message and give both of them as response, the response would look something like this:
+
+  ```json
+  {
+    "processedItems": [
+      {
+        "id": 1,
+        "name": "name",
+        "description": "description",
+        "email": "email@email.com",
+        "status": "PROCESSED"
+      }
+    ],
+    "notProcessedItems": [
+      {
+        "id": 2,
+        "detail": "Item with id does not exist"
+      },
+      {
+        "id": 3,
+        "detail": "Some other error message here"
+      }
+    ]
+  }
+  ```
